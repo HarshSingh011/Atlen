@@ -88,16 +88,6 @@ fun EmailVerifyScreen(navController: NavController) {
                     .padding(24.dp),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                //Image
-//                IconButton(
-//                    onClick = { /* Handle back navigation */ },
-//                    modifier = Modifier.align(Alignment.Start)
-//                ) {
-//                    Icon(
-//                        painter = painterResource(id = R.drawable.backbutton),
-//                        contentDescription = "Back"
-//                    )
-//                }
 
                 Spacer(modifier = Modifier.height(48.dp))
 

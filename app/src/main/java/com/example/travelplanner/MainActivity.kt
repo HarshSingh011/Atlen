@@ -43,12 +43,10 @@ class MainActivity : AppCompatActivity() {
 
 object DataStorageManager {
     fun getToken(activity: MainActivity): String? {
-        //Implementation to get token
         return null
     }
 
     fun getAccountCreated(activity: MainActivity): Boolean {
-        //Implementation to check account creation
         return false
     }
 }

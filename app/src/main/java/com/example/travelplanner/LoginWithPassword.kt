@@ -110,15 +110,6 @@ fun LoginScreen(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-//                IconButton(
-//                    onClick = { /* Handle back navigation */ },
-//                    modifier = Modifier.padding(top = 8.dp)
-//                ) {
-//                    Icon(
-//                        imageVector = Icons.Default.ArrowBack,
-//                        contentDescription = "Back"
-//                    )
-//                }
 
                 Spacer(modifier = Modifier.height(48.dp))
 
@@ -126,7 +117,6 @@ fun LoginScreen(
                     painter = painterResource(id = R.drawable.logo),
                     contentDescription = "Logo",
                     modifier = Modifier
-//                        .padding(vertical = 32.dp)
                         .size(64.dp)
                         .align(Alignment.CenterHorizontally)
                 )
