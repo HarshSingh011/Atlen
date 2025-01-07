@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/authnavgraph"
+    app:startDestination="@id/onBoarding">
+    <fragment
+        android:id="@+id/emailVerify"
+        android:name="com.example.travelplanner.EmailVerify"
+        android:label="fragment_email_verify"
+        tools:layout="@layout/fragment_email_verify" >
+        <action
+            android:id="@+id/action_emailVerify_to_signUp"
+            app:destination="@id/signUp" />
+    </fragment>
+    <fragment
+        android:id="@+id/forgotPasswordEmailVerify"
+        android:name="com.example.travelplanner.forgotPasswordEmailVerify"
+        android:label="fragment_forgot_password_email_verify"
+        tools:layout="@layout/fragment_forgot_password_email_verify" >
+        <action
+            android:id="@+id/action_forgotPasswordEmailVerify_to_forgotPasswordOtpValidation"
+            app:destination="@id/forgotPasswordOtpValidation" />
+    </fragment>
+    <fragment
+        android:id="@+id/frontPage"
+        android:name="com.example.travelplanner.FrontPage"
+        android:label="fragment_front_page"
+        tools:layout="@layout/fragment_front_page" >
+        <action
+            android:id="@+id/action_frontPage_to_emailVerify"
+            app:destination="@id/emailVerify" />
+        <action
+            android:id="@+id/action_frontPage_to_loginWithPassword"
+            app:destination="@id/loginWithPassword" />
+    </fragment>
+    <fragment
+        android:id="@+id/onBoarding"
+        android:name="com.example.travelplanner.OnBoarding"
+        android:label="fragment_on_boarding"
+        tools:layout="@layout/fragment_on_boarding" >
+        <action
+            android:id="@+id/action_onBoarding_to_frontPage"
+            app:destination="@id/frontPage" />
+    </fragment>
+    <fragment
+        android:id="@+id/loginWithPassword"
+        android:name="com.example.travelplanner.LoginWithPassword"
+        android:label="fragment_login_with_password"
+        tools:layout="@layout/fragment_login_with_password" >
+        <action
+            android:id="@+id/action_loginWithPassword_to_forgotPasswordEmailVerify"
+            app:destination="@id/forgotPasswordEmailVerify" />
+        <action
+            android:id="@+id/action_loginWithPassword_to_splashScreen"
+            app:destination="@id/splashScreen" />
+    </fragment>
+    <fragment
+        android:id="@+id/otpValidation"
+        android:name="com.example.travelplanner.OtpValidation"
+        android:label="fragment_otp_validation"
+        tools:layout="@layout/fragment_otp_validation" >
+        <action
+            android:id="@+id/action_otpValidation_to_loginWithPassword"
+            app:destination="@id/loginWithPassword" />
+    </fragment>
+    <fragment
+        android:id="@+id/signUp"
+        android:name="com.example.travelplanner.SignUp"
+        android:label="fragment_sign_up"
+        tools:layout="@layout/fragment_sign_up" >
+        <action
+            android:id="@+id/action_signUp_to_otpValidation"
+            app:destination="@id/otpValidation" />
+    </fragment>
+    <fragment
+        android:id="@+id/splashScreen"
+        android:name="com.example.travelplanner.SplashScreen"
+        android:label="fragment_splash_screen"
+        tools:layout="@layout/fragment_splash_screen" />
+
+    <action
+        android:id="@+id/action_global_onBoardingFragment"
+        app:destination="@id/onBoarding" />
+
+    <action
+        android:id="@+id/action_global_spalshScreen"
+        app:destination="@id/onBoarding" />
+
+    <action
+        android:id="@+id/action_global_loginWithPassword"
+        app:destination="@id/loginWithPassword" />
+    <fragment
+        android:id="@+id/forgotPasswordOtpValidation"
+        android:name="com.example.travelplanner.ForgotPasswordOtpValidation"
+        android:label="fragment_forgot_password_otp_validation"
+        tools:layout="@layout/fragment_forgot_password_otp_validation" >
+        <action
+            android:id="@+id/action_forgotPasswordOtpValidation_to_resetPassword"
+            app:destination="@id/resetPassword" />
+    </fragment>
+    <fragment
+        android:id="@+id/resetPassword"
+        android:name="com.example.travelplanner.ResetPassword"
+        android:label="fragment_reset_password"
+        tools:layout="@layout/fragment_reset_password" >
+        <action
+            android:id="@+id/action_resetPassword_to_loginWithPassword"
+            app:destination="@id/loginWithPassword" />
+    </fragment>
+
+</navigation>
