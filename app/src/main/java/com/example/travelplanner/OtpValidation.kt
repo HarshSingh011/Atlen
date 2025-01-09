@@ -42,6 +42,7 @@ import com.example.travelplanner.DataClasses.Registrationotp
 import kotlinx.coroutines.launch
 import org.json.JSONObject
 import com.example.travelplanner.DataStorage.DataStorageManager
+import kotlinx.coroutines.delay
 
 class OtpValidation : Fragment() {
     private lateinit var email: String
@@ -71,7 +72,6 @@ class OtpValidation : Fragment() {
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    findNavController().navigate(R.id.otpValidation)
                 }
             }
         )
@@ -119,6 +119,7 @@ fun OtpValidationScreen(
 
     LaunchedEffect(remainingTime) {
         if (remainingTime > 0) {
+            delay(1000)
             remainingTime--
             if (remainingTime == 0) {
                 canResend = true

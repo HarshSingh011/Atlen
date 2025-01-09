@@ -39,6 +39,7 @@ import com.example.travelplanner.DataClasses.EmailVerify
 import com.example.travelplanner.DataClasses.ForgotPasswordOtpVerify
 import com.example.travelplanner.DataClasses.Register
 import com.example.travelplanner.DataClasses.Registrationotp
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class ForgotPasswordOtpValidation : Fragment() {
@@ -62,9 +63,7 @@ class ForgotPasswordOtpValidation : Fragment() {
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    findNavController().navigate(R.id.forgotPasswordOtpValidation, Bundle().apply {
-                        putString("email", email)
-                    })
+
                 }
             }
         )
@@ -100,6 +99,7 @@ fun OtpValidationForgotScreen(
 
     LaunchedEffect(remainingTime) {
         if (remainingTime > 0) {
+            delay(1000)
             remainingTime--
             if (remainingTime == 0) {
                 canResend = true

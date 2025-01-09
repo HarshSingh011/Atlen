@@ -37,6 +37,7 @@ import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.findNavController
+import androidx.navigation.fragment.findNavController
 import kotlinx.coroutines.launch
 
 
@@ -51,7 +52,7 @@ class EmailVerify : Fragment() {
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    activity?.finish()
+                    findNavController().navigate(R.id.frontPage)
                 }
             }
         )

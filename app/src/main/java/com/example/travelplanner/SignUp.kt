@@ -53,6 +53,9 @@ class SignUp : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+
+        
+
         return ComposeView(requireContext()).apply {
             setContent {
                 SignUpScreen(findNavController(), email, onNavigateBack = {})
@@ -80,7 +83,7 @@ fun SignUpScreen(
     val context = LocalContext.current
     val primaryColor = ContextCompat.getColor(context, R.color.primarycolor)
     val passwordBoxColor = Color(ContextCompat.getColor(context, R.color.passwordBox))
-
+    val green = Color(ContextCompat.getColor(context, R.color.correctcolor))
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -111,9 +114,10 @@ fun SignUpScreen(
                     .fillMaxSize()
                     .padding(16.dp)
             ) {
-                IconButton(onClick = onNavigateBack) {
+                IconButton(onClick = { navController.navigate(R.id.frontPage) }) {
                     Icon(Icons.Default.ArrowBack, contentDescription = "Back")
                 }
+
 
                 Image(
                     painter = painterResource(id = R.drawable.logo),
@@ -259,13 +263,13 @@ fun SignUpScreen(
                                             else R.drawable.ic_launcher_foreground
                                         ),
                                         contentDescription = null,
-                                        tint = if (isMet) Color(0xFF6200EE) else Color.Gray,
+//                                        tint = if (isMet) Color(0xFF6200EE) else Color.Gray,
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = requirement,
-                                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                                        color = if (isMet) green else Color.Black
                                     )
                                 }
                             }

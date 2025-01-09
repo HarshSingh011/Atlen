@@ -59,6 +59,7 @@ import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
@@ -92,10 +93,7 @@ class ResetPassword : Fragment() {
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    findNavController().navigate(R.id.resetPassword, Bundle().apply {
-                        putString("email", email)
-                        putString("reset_token", resetToken)
-                    })
+
                 }
             }
         )
@@ -125,6 +123,7 @@ fun resetpassword(
     var errorMessage by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    val passwordBoxColor = Color(ContextCompat.getColor(context, R.color.passwordBox))
 
     val snackbarHostState = remember { SnackbarHostState() }
 
@@ -197,7 +196,7 @@ fun resetpassword(
                         password = it
                         showPasswordRequirements = it.isNotEmpty()
                     },
-                    label = { Text("Password") },
+                    placeholder = { Text("Password") },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
@@ -212,7 +211,7 @@ fun resetpassword(
                         .onFocusChanged { focusState ->
                             showPasswordRequirements = focusState.isFocused && password.isNotEmpty()
                         },
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(15.dp)
                 )
 
                 AnimatedVisibility(visible = showPasswordRequirements) {
@@ -220,7 +219,8 @@ fun resetpassword(
                         modifier = Modifier
                             .fillMaxWidth()
                             .padding(vertical = 8.dp),
-                        shape = RoundedCornerShape(8.dp)
+                        shape = RoundedCornerShape(8.dp),
+                        backgroundColor = passwordBoxColor
                     ) {
                         Column(
                             modifier = Modifier
@@ -272,7 +272,7 @@ fun resetpassword(
                 OutlinedTextField(
                     value = confirmPassword,
                     onValueChange = { confirmPassword = it },
-                    label = { Text("Confirm Password") },
+                    placeholder = { Text("Confirm Password") },
                     visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
                         IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
@@ -283,7 +283,7 @@ fun resetpassword(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(8.dp)
+                    shape = RoundedCornerShape(15.dp)
                 )
 
                 Spacer(modifier = Modifier.height(24.dp))
@@ -331,7 +331,7 @@ fun resetpassword(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(48.dp),
-                    shape = RoundedCornerShape(8.dp),
+                    shape = RoundedCornerShape(15.dp),
                     colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF6200EE))
                 ) {
                     Text("Continue")

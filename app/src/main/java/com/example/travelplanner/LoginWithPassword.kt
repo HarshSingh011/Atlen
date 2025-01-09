@@ -142,7 +142,6 @@ fun LoginScreen(
                     )
                 )
 
-                // Password Field
                 OutlinedTextField(
                     value = password,
                     onValueChange = {

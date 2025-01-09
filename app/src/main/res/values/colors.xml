@@ -4,5 +4,6 @@
     <color name="white">#FFFFFFFF</color>
     <color name="primarycolor">#5552FF</color>
     <color name="passwordBox">#D9E0FA</color>
+    <color name="correctcolor">#126B12</color>
 </resources>
 
