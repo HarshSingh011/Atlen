@@ -131,6 +131,7 @@ fun LoginScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    var isLoading by remember { mutableStateOf(false) }
 
     val primaryColor = ContextCompat.getColor(context, R.color.primarycolor)
     val passwordBoxColor = Color(ContextCompat.getColor(context, R.color.passwordBox))
@@ -295,6 +296,7 @@ fun LoginScreen(
 
                 Button(
                     onClick = {
+                        isLoading = true
                         scope.launch {
                             when{
                                 !isPasswordValid(password) -> {
@@ -304,6 +306,7 @@ fun LoginScreen(
                                 }
                                 else -> {
                                     try {
+                                        isLoading = false
                                         val response = AuthRetrofitClient.instance.login(LoginRequest(email, password))
                                         if (response.data.access != null) {
                                             dataStoreManager.saveToken(response.data.access)
@@ -315,6 +318,7 @@ fun LoginScreen(
                                             snackbarHostState.showSnackbar(response.message)
                                         }
                                     } catch (e: Exception) {
+                                        isLoading = false
                                         snackbarHostState.showSnackbar("Login failed: ${e.message}")
                                     }
                                 }
@@ -345,6 +349,7 @@ fun LoginScreen(
                 )
             }
         }
+        LoadingScreen(isLoading = isLoading)
     }
 }
 

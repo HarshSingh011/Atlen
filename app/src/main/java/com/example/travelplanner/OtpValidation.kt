@@ -33,6 +33,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContentProviderCompat.requireContext
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -116,7 +117,11 @@ fun OtpValidationScreen(
     var remainingTime by remember { mutableStateOf(0) }
     var snackbarMessage by remember { mutableStateOf("") }
     var snackbarType by remember { mutableStateOf(SnackbarType.SUCCESS) }
+    val context = LocalContext.current
 
+    val primaryColor = ContextCompat.getColor(context, R.color.primarycolor)
+    val passwordBoxColor = Color(ContextCompat.getColor(context, R.color.passwordBox))
+    val green = Color(ContextCompat.getColor(context, R.color.correctcolor))
 
     val focusRequesters = remember { List(6) { FocusRequester() } }
     val scaffoldState = rememberScaffoldState()
@@ -228,6 +233,7 @@ fun OtpValidationScreen(
 
             Button(
                 onClick = {
+                    isLoading = true
                     scope.launch {
                         val enteredOtp = otpValue.joinToString("")
                         if (enteredOtp.length != 6) {
@@ -238,7 +244,6 @@ fun OtpValidationScreen(
                         }
 
                         try {
-                            isLoading = true
                             isError = false
                             val response = AuthRetrofitClient.instance.restrationOtp(
                                 Registrationotp(
@@ -248,6 +253,7 @@ fun OtpValidationScreen(
                                 )
                             )
 
+                            isLoading = false
                             if (response.success) {
                                 snackbarType = SnackbarType.SUCCESS
                                 snackbarMessage = "OTP verified successfully"
@@ -266,11 +272,10 @@ fun OtpValidationScreen(
                                 snackbarMessage = message
                             }
                         } catch (e: Exception) {
+                            isLoading = false
                             isError = true
                             snackbarType = SnackbarType.ERROR
                             snackbarMessage = "Invalid OTP"
-                        } finally {
-                            isLoading = false
                         }
                     }
                 },
@@ -301,9 +306,10 @@ fun OtpValidationScreen(
             TextButton(
                 onClick = {
                     if (canResend) {
+                        isLoading = true
                         scope.launch {
                             try {
-                                isLoading = true
+                                isLoading = false
                                 val response = AuthRetrofitClient.instance.register(
                                     Register(
                                         email = email,
@@ -327,10 +333,9 @@ fun OtpValidationScreen(
                                     snackbarMessage = "Failed to resend OTP"
                                 }
                             } catch (e: Exception) {
+                                isLoading = false
                                 snackbarType = SnackbarType.ERROR
                                 snackbarMessage = "Failed to resend OTP"
-                            } finally {
-                                isLoading = false
                             }
                         }
                     }
@@ -354,6 +359,7 @@ fun OtpValidationScreen(
                 )
             }
         }
+        LoadingScreen(isLoading = isLoading)
     }
 }
 

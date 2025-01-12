@@ -100,7 +100,6 @@ private fun CheckAuthAndNavigate(
     }
 }
 
-//Dummy DataStorageManager for compilation
 class DataStorageManager {
     fun getToken() = kotlinx.coroutines.flow.flow { emit("token") }
     fun getAccountToken() = kotlinx.coroutines.flow.flow { emit("accountCreated") }

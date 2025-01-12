@@ -22,6 +22,7 @@ import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.input.key.*
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -30,6 +31,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
@@ -41,6 +43,7 @@ import com.example.travelplanner.DataClasses.Register
 import com.example.travelplanner.DataClasses.Registrationotp
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 class ForgotPasswordOtpValidation : Fragment() {
     private var email: String = ""
@@ -93,6 +96,11 @@ fun OtpValidationForgotScreen(
     var remainingTime by remember { mutableStateOf(0) }
     var snackbarMessage by remember { mutableStateOf("") }
     var snackbarType by remember { mutableStateOf(SnackbarType.SUCCESS) }
+    val context = LocalContext.current
+
+    val primaryColor = ContextCompat.getColor(context, R.color.primarycolor)
+    val passwordBoxColor = Color(ContextCompat.getColor(context, R.color.passwordBox))
+    val green = Color(ContextCompat.getColor(context, R.color.correctcolor))
 
     val focusRequesters = remember { List(6) { FocusRequester() } }
     val scaffoldState = rememberScaffoldState()
@@ -203,6 +211,7 @@ fun OtpValidationForgotScreen(
 
             Button(
                 onClick = {
+                    isLoading = true
                     scope.launch {
                         val enteredOtp = otpValue.joinToString("")
                         if (enteredOtp.length != 6) {
@@ -211,8 +220,8 @@ fun OtpValidationForgotScreen(
                             isError = true
                             return@launch
                         }
-
                         try {
+                            isLoading = false
                             isLoading = true
                             isError = false
                             val response = AuthRetrofitClient.instance.resetpasswordOtp(
@@ -233,15 +242,15 @@ fun OtpValidationForgotScreen(
                                 })
                             } else {
                                 isError = true
+                                val message = JSONObject(response.message).getString("message")
                                 snackbarType = SnackbarType.ERROR
-                                snackbarMessage = response.message ?: "Invalid OTP"
+                                snackbarMessage = message
                             }
                         } catch (e: Exception) {
+                            isLoading = false
                             isError = true
                             snackbarType = SnackbarType.ERROR
                             snackbarMessage = "Error: ${e.message}"
-                        } finally {
-                            isLoading = false
                         }
                     }
                 },
@@ -249,8 +258,7 @@ fun OtpValidationForgotScreen(
                     .fillMaxWidth()
                     .height(48.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color(0xFF4E4EFF),
-                    disabledBackgroundColor = Color(0xFF4E4EFF).copy(alpha = 0.5f)
+                    backgroundColor = Color(primaryColor)
                 ),
                 shape = RoundedCornerShape(8.dp),
                 enabled = !isLoading
@@ -319,6 +327,7 @@ fun OtpValidationForgotScreen(
                 )
             }
         }
+        LoadingScreen(isLoading = isLoading)
     }
 }
 

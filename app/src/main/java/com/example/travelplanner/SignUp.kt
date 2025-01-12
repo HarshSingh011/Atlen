@@ -1,5 +1,6 @@
 package com.example.travelplanner
 
+import android.app.Dialog
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -72,6 +73,7 @@ class SignUp : Fragment() {
             }
         }
     }
+
 }
 
 @OptIn(ExperimentalComposeUiApi::class)
@@ -94,6 +96,7 @@ fun SignUpScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     val keyboardController = LocalSoftwareKeyboardController.current
+    var isLoading by remember { mutableStateOf(false) }
 
     val primaryColor = ContextCompat.getColor(context, R.color.primarycolor)
     val passwordBoxColor = Color(ContextCompat.getColor(context, R.color.passwordBox))
@@ -162,7 +165,7 @@ fun SignUpScreen(
                 ) {
                     OutlinedTextField(
                         value = firstName,
-                        onValueChange = { firstName = it },
+                        onValueChange = { firstName = it.trim() },
                         placeholder = { Text("First Name") },
                         modifier = Modifier
                             .weight(1f)
@@ -175,7 +178,7 @@ fun SignUpScreen(
                     )
                     OutlinedTextField(
                         value = lastName,
-                        onValueChange = { lastName = it },
+                        onValueChange = { lastName = it.trim() },
                         placeholder = { Text("Last Name") },
                         modifier = Modifier
                             .weight(1f)
@@ -411,6 +414,7 @@ fun SignUpScreen(
                                 }
                             }
                             else -> {
+                                isLoading = true
                                 scope.launch {
                                     try {
                                         val response = AuthRetrofitClient.instance.register(
@@ -422,14 +426,15 @@ fun SignUpScreen(
                                                 confirm_password = confirmPassword
                                             )
                                         )
+                                        isLoading = false
                                         if (response.success) {
                                             navController.navigate(R.id.action_signUp_to_otpValidation, bundle)
                                         } else {
                                             val message = JSONObject(response.message).getString("message")
-                                            println(message)
                                             snackbarHostState.showSnackbar(message)
                                         }
                                     } catch (e: Exception) {
+                                        isLoading = false
                                         snackbarHostState.showSnackbar("Registration failed: ${e.message}")
                                     }
                                 }
@@ -488,6 +493,7 @@ fun SignUpScreen(
                     }
                 }
             }
+            LoadingScreen(isLoading = isLoading)
         }
     }
 }

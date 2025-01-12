@@ -8,8 +8,13 @@ import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -21,7 +26,11 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.Button
 import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.Card
@@ -47,13 +56,21 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusDirection
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.ImeAction
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
@@ -69,6 +86,7 @@ import com.example.travelplanner.DataClasses.Register
 import com.example.travelplanner.DataClasses.ResetPasswordRequest
 import com.example.travelplanner.R
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 
 class ResetPassword : Fragment() {
@@ -112,34 +130,36 @@ fun resetpassword(
     email: String,
     resetToken: String,
 ) {
-    var firstName by remember { mutableStateOf("") }
-    var lastName by remember { mutableStateOf("") }
     var password by remember { mutableStateOf("") }
     var confirmPassword by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
     var confirmPasswordVisible by remember { mutableStateOf(false) }
     var showPasswordRequirements by remember { mutableStateOf(false) }
-    var showError by remember { mutableStateOf(false) }
-    var errorMessage by remember { mutableStateOf("") }
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
+    var isLoading by remember { mutableStateOf(false) }
+    var isPasswordFocused by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+    var showConfirmPasswordRequirements by remember { mutableStateOf(false) }
+    var isConfirmPasswordFocused by remember { mutableStateOf(false) }
+
+    val primaryColor = ContextCompat.getColor(context, R.color.primarycolor)
     val passwordBoxColor = Color(ContextCompat.getColor(context, R.color.passwordBox))
+    val green = Color(ContextCompat.getColor(context, R.color.correctcolor))
 
     val snackbarHostState = remember { SnackbarHostState() }
 
     val passwordRequirements = listOf(
-        "One uppercase letter" to password.any { it.isUpperCase() },
-        "One lowercase letter" to password.any { it.isLowerCase() },
-        "One number" to password.any { it.isDigit() },
-        "One special character (&@$% etc.)" to password.any { !it.isLetterOrDigit() }
+        "One uppercase letter" to { it: String -> it.any { char -> char.isUpperCase() } },
+        "One lowercase letter" to { it: String -> it.any { char -> char.isLowerCase() } },
+        "One number" to { it: String -> it.any { char -> char.isDigit() } },
+        "One special character (&@$% etc.)" to { it: String -> it.any { char -> !char.isLetterOrDigit() } },
+        "At least 8 characters" to { it: String -> it.length >= 8 }
     )
 
-    fun isPasswordValid(): Boolean {
-        return password.length >= 6 &&
-                password.any { it.isUpperCase() } &&
-                password.any { it.isLowerCase() } &&
-                password.any { it.isDigit() } &&
-                password.any { !it.isLetterOrDigit() }
+    fun isPasswordValid(pass: String): Boolean {
+        return passwordRequirements.all { (_, check) -> check(pass) }
     }
 
     Surface(
@@ -147,13 +167,18 @@ fun resetpassword(
         color = Color.White
     ) {
         Box(
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier
+                .fillMaxSize()
+                .pointerInput(Unit) {
+                    detectTapGestures(onTap = { focusManager.clearFocus() })
+                }
         ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
                     .background(Color.White)
+                    .verticalScroll(rememberScrollState())
             ) {
 
                 Spacer(modifier = Modifier.height(48.dp))
@@ -194,60 +219,70 @@ fun resetpassword(
                     value = password,
                     onValueChange = {
                         password = it
-                        showPasswordRequirements = it.isNotEmpty()
+                        showPasswordRequirements = true
                     },
                     placeholder = { Text("Password") },
                     visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Next
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onNext = { focusManager.moveFocus(FocusDirection.Next) }
+                    ),
                     trailingIcon = {
                         IconButton(onClick = { passwordVisible = !passwordVisible }) {
                             Icon(
-                                if (passwordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                 contentDescription = if (passwordVisible) "Hide password" else "Show password"
                             )
                         }
                     },
                     modifier = Modifier
                         .fillMaxWidth()
+                        .focusRequester(remember { FocusRequester() })
                         .onFocusChanged { focusState ->
+                            isPasswordFocused = focusState.isFocused
                             showPasswordRequirements = focusState.isFocused && password.isNotEmpty()
                         },
                     shape = RoundedCornerShape(15.dp)
                 )
 
-                AnimatedVisibility(visible = showPasswordRequirements) {
+                AnimatedVisibility(
+                    visible = showPasswordRequirements && isPasswordFocused,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
                     Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 8.dp),
+                        modifier = Modifier.fillMaxWidth(),
                         shape = RoundedCornerShape(8.dp),
                         backgroundColor = passwordBoxColor
                     ) {
                         Column(
-                            modifier = Modifier
-                                .padding(16.dp)
+                            modifier = Modifier.padding(16.dp)
                         ) {
                             Text(
-                                text = "Password must be at least 6 characters long and include:",
+                                text = "Password must include:",
                                 color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
                             )
-                            passwordRequirements.forEach { (requirement, isMet) ->
+                            passwordRequirements.forEach { (requirement, check) ->
                                 Row(
                                     modifier = Modifier.padding(vertical = 4.dp),
                                     verticalAlignment = Alignment.CenterVertically
                                 ) {
                                     Icon(
                                         painter = painterResource(
-                                            id = if (isMet) R.drawable.tick
+                                            id = if (check(password)) R.drawable.tick
                                             else R.drawable.ic_launcher_foreground
                                         ),
                                         contentDescription = null,
-                                        tint = if (isMet) Color(0xFF6200EE) else Color.Gray,
+                                        tint = if (check(password)) green else Color.Black,
                                         modifier = Modifier.size(16.dp)
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = requirement,
-                                        color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                                        color = if (check(password)) green else Color.Black
                                     )
                                 }
                             }
@@ -271,27 +306,107 @@ fun resetpassword(
 
                 OutlinedTextField(
                     value = confirmPassword,
-                    onValueChange = { confirmPassword = it },
+                    onValueChange = {
+                        confirmPassword = it
+                        showConfirmPasswordRequirements = true
+                    },
                     placeholder = { Text("Confirm Password") },
                     visualTransformation = if (confirmPasswordVisible) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
+                    ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            keyboardController?.hide()
+                            focusManager.clearFocus()
+                        }
+                    ),
                     trailingIcon = {
                         IconButton(onClick = { confirmPasswordVisible = !confirmPasswordVisible }) {
                             Icon(
-                                if (confirmPasswordVisible) Icons.Default.VisibilityOff else Icons.Default.Visibility,
+                                if (confirmPasswordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
                                 contentDescription = if (confirmPasswordVisible) "Hide password" else "Show password"
                             )
                         }
                     },
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(remember { FocusRequester() })
+                        .onFocusChanged { focusState ->
+                            isConfirmPasswordFocused = focusState.isFocused
+                            showConfirmPasswordRequirements = focusState.isFocused && password.isNotEmpty()
+                        },
                     shape = RoundedCornerShape(15.dp)
                 )
+
+                AnimatedVisibility(
+                    visible = showConfirmPasswordRequirements && isConfirmPasswordFocused,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
+                ) {
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        backgroundColor = passwordBoxColor
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Text(
+                                text = "Confirm password must:",
+                                color = MaterialTheme.colors.onSurface.copy(alpha = 0.7f)
+                            )
+                            passwordRequirements.forEach { (requirement, check) ->
+                                Row(
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        painter = painterResource(
+                                            id = if (check(confirmPassword)) R.drawable.tick
+                                            else R.drawable.ic_launcher_foreground
+                                        ),
+                                        contentDescription = null,
+                                        tint = if (check(confirmPassword)) green else Color.Black,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = requirement,
+                                        color = if (check(confirmPassword)) green else Color.Black
+                                    )
+                                }
+                            }
+                            Row(
+                                modifier = Modifier.padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    painter = painterResource(
+                                        id = if (password == confirmPassword) R.drawable.tick
+                                        else R.drawable.ic_launcher_foreground
+                                    ),
+                                    contentDescription = null,
+                                    tint = if (password == confirmPassword) green else Color.Black,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Match the password",
+                                    color = if (password == confirmPassword) green else Color.Black
+                                )
+                            }
+                        }
+                    }
+                }
 
                 Spacer(modifier = Modifier.height(24.dp))
 
                 Button(
                     onClick = {
                         when {
-                            !isPasswordValid() -> {
+                            !isPasswordValid(password) -> {
                                 scope.launch {
                                     snackbarHostState.showSnackbar("Password does not meet requirements")
                                 }
@@ -302,8 +417,10 @@ fun resetpassword(
                                 }
                             }
                             else -> {
+                                isLoading = true
                                 scope.launch {
                                     try {
+                                        isLoading = false
                                         val response = AuthRetrofitClient.instance.resetpassword(
                                             ResetPasswordRequest(
                                                 email = email,
@@ -319,9 +436,11 @@ fun resetpassword(
                                             })
                                             snackbarHostState.showSnackbar("Password reset successfully")
                                         } else {
-                                            snackbarHostState.showSnackbar(response.message)
+                                            val message = JSONObject(response.message).getString("message")
+                                            snackbarHostState.showSnackbar(message)
                                         }
                                     } catch (e: Exception) {
+                                        isLoading = false
                                         snackbarHostState.showSnackbar("Registration failed: ${e.message}")
                                     }
                                 }
@@ -332,9 +451,14 @@ fun resetpassword(
                         .fillMaxWidth()
                         .height(48.dp),
                     shape = RoundedCornerShape(15.dp),
-                    colors = ButtonDefaults.buttonColors(backgroundColor = Color(0xFF6200EE))
+                    colors = ButtonDefaults.buttonColors(
+                        backgroundColor = Color(primaryColor)
+                    ),
                 ) {
-                    Text("Continue")
+                    Text(
+                        "Continue",
+                        color = Color.White
+                    )
                 }
 
                 Text(

@@ -114,7 +114,7 @@ fun EmailVerifyScreen(navController: NavController) {
 
                 OutlinedTextField(
                     value = email,
-                    onValueChange = { email = it },
+                    onValueChange = { email = it.trim() },
                     placeholder = { if (email.isEmpty()) Text("Enter your email") else null },
                     modifier = Modifier
                         .fillMaxWidth()
@@ -201,6 +201,7 @@ fun EmailVerifyScreen(navController: NavController) {
                     }
                 }
             }
+
         }
     }
 }

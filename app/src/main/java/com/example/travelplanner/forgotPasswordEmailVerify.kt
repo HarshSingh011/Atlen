@@ -13,7 +13,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 //import androidx.compose.material3.*
-import androidx.compose.material3.SnackbarHostState
+//import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
@@ -23,17 +23,20 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.ComposeView
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.core.content.ContextCompat
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.fragment.findNavController
 import com.example.travelplanner.DataClasses.EmailVerify
 import kotlinx.coroutines.launch
+import org.json.JSONObject
 
 class forgotPasswordEmailVerify : Fragment() {
     private var email: String = ""
@@ -78,6 +81,11 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
     val emailRegex = "^[A-Za-z0-9+_.-]+@[A-Za-z0-9.-]+$".toRegex()
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+
+    val primaryColor = ContextCompat.getColor(context, R.color.primarycolor)
+    val passwordBoxColor = Color(ContextCompat.getColor(context, R.color.passwordBox))
+    val green = Color(ContextCompat.getColor(context, R.color.correctcolor))
 
     Box(
         modifier = Modifier.fillMaxSize()
@@ -151,7 +159,7 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
 
             OutlinedTextField(
                 value = email,
-                onValueChange = { email = it },
+                onValueChange = { email = it.trim() },
                 placeholder = { Text("Email") },
                 modifier = Modifier
                     .fillMaxWidth()
@@ -162,31 +170,30 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
                     unfocusedBorderColor = Color.LightGray
                 ),
                 singleLine = true,
-
             )
 
             Button(
                 onClick = {
+                    isLoading = true
                     if (email.isNotEmpty() ) {
                         if( email.matches(emailRegex) ){
                             coroutineScope.launch {
-                                isLoading = true
                                 showError = false
                                 try {
+                                    isLoading = false
                                     val response = AuthRetrofitClient.instance.verifyEmailForgot(EmailVerify(email))
                                     if (response.success) {
                                         navController.navigate(R.id.action_forgotPasswordEmailVerify_to_forgotPasswordOtpValidation, Bundle().apply {
                                             putString("email", email)
                                         })
                                     } else {
-                                        showError = true
-                                        errorMessage = response.message ?: "An error occurred"
+                                        val message = JSONObject(response.message).getString("message")
+                                        snackbarHostState.showSnackbar(message)
                                     }
                                 } catch (e: Exception) {
+                                    isLoading = false
                                     showError = true
                                     errorMessage = "Failed to send OTP: ${e.message}"
-                                } finally {
-                                    isLoading = false
                                 }
                             }
                         } else {
@@ -205,7 +212,7 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
                     .height(48.dp),
                 shape = RoundedCornerShape(15.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color(0xFF6366F1)
+                    backgroundColor = Color(primaryColor)
                 ),
                 enabled = !isLoading
             ) {
@@ -220,7 +227,7 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
                 }
             }
         }
-        androidx.compose.material3.SnackbarHost(
+        SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
                 .align(Alignment.TopCenter)
@@ -241,13 +248,14 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
                         contentDescription = null,
                         tint = Color(0xFFB71C1C),
                         modifier = Modifier.clickable {
-                            snackbarHostState.currentSnackbarData?.dismiss() // Dismiss snackbar on icon click
+                            snackbarHostState.currentSnackbarData?.dismiss()
                         }
                     )
-                    androidx.compose.material3.Text(snackbarData.visuals.message)
+                    Text(snackbarData.message)
                 }
             }
         }
+        LoadingScreen(isLoading = isLoading)
     }
 }
 
