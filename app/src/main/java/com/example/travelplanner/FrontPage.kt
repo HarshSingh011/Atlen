@@ -47,6 +47,7 @@ class FrontPage : Fragment() {
     private lateinit var googleSignInClient: GoogleSignInClient
     private val RC_SIGN_IN = 9001
     private val TAG = "FrontPage"
+    private lateinit var dataStoreManager: DataStorageManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -83,6 +84,8 @@ class FrontPage : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+
+        dataStoreManager = DataStorageManager(requireContext())
 
         requireActivity().onBackPressedDispatcher.addCallback(
             viewLifecycleOwner,
@@ -142,9 +145,11 @@ class FrontPage : Fragment() {
                 )
 
                 Log.d(TAG, "Token conversion successful")
-                DataStorageManager.saveToken(requireContext(), response.access_token)
+                // Save the access token
+                dataStoreManager.saveToken(response.access_token)
 
-                findNavController().navigate(R.id.action_frontPage_to_loginWithPassword)
+                // Navigate to the next screen
+                findNavController().navigate(R.id.action_frontPage_to_loginSuccessful)
             } catch (e: Exception) {
                 Log.e(TAG, "Failed to authenticate with Google", e)
                 Toast.makeText(requireContext(), "Failed to authenticate with Google: ${e.message}", Toast.LENGTH_LONG).show()

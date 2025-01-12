@@ -54,9 +54,7 @@ class forgotPasswordEmailVerify : Fragment() {
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    findNavController().navigate(R.id.loginWithPassword,Bundle().apply {
-                        putString("email", email)
-                    })
+                    findNavController().navigate(R.id.loginWithPassword)
                 }
             }
         )

@@ -1,6 +1,7 @@
 package com.example.travelplanner
 
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -43,6 +44,7 @@ import kotlinx.coroutines.launch
 import org.json.JSONObject
 import com.example.travelplanner.DataStorage.DataStorageManager
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 
 class OtpValidation : Fragment() {
     private lateinit var email: String
@@ -50,6 +52,7 @@ class OtpValidation : Fragment() {
     private lateinit var lastName: String
     private lateinit var password: String
     private lateinit var confirmPassword: String
+    private lateinit var dataStoreManager: DataStorageManager
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -67,6 +70,8 @@ class OtpValidation : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+
+        dataStoreManager = DataStorageManager(requireContext())
 
         requireActivity().onBackPressedDispatcher.addCallback(
             viewLifecycleOwner,
@@ -86,7 +91,7 @@ class OtpValidation : Fragment() {
                     confirmPassword = confirmPassword,
                     scope = lifecycleScope,
                     navController = findNavController(),
-                    context = requireContext()
+                    dataStorageManager = dataStoreManager
                 )
             }
         }
@@ -102,7 +107,7 @@ fun OtpValidationScreen(
     confirmPassword: String,
     scope: kotlinx.coroutines.CoroutineScope,
     navController: NavController,
-    context : android.content.Context
+    dataStorageManager: DataStorageManager
 ) {
     var otpValue by remember { mutableStateOf(List(6) { "" }) }
     var isError by remember { mutableStateOf(false) }
@@ -246,7 +251,11 @@ fun OtpValidationScreen(
                             if (response.success) {
                                 snackbarType = SnackbarType.SUCCESS
                                 snackbarMessage = "OTP verified successfully"
-                                DataStorageManager.saveAccountCreated(context, true)
+                                dataStorageManager.saveAccountToken(response.data.access)
+                                dataStorageManager.saveAccountEmail(email)
+                                val accountCreated = dataStorageManager.getAccountToken()
+                                val accountEmail = dataStorageManager.getAccountEmail()
+                                Log.d("OtpValidation", "Saved Value: $accountCreated  , $accountEmail")
                                 navController.navigate(R.id.action_otpValidation_to_loginWithPassword, Bundle().apply {
                                     putString("email", email)
                                 })
@@ -482,7 +491,7 @@ fun DefaultPreview() {
         confirmPassword = "",
         scope = rememberCoroutineScope(),
         navController = rememberNavController(),
-        context = LocalContext.current
+        dataStorageManager = DataStorageManager(LocalContext.current)
     )
 }
 

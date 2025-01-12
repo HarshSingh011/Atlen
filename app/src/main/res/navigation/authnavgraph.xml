@@ -31,8 +31,9 @@
             android:id="@+id/action_frontPage_to_emailVerify"
             app:destination="@id/emailVerify" />
         <action
-            android:id="@+id/action_frontPage_to_loginWithPassword"
-            app:destination="@id/loginWithPassword" />
+            android:id="@+id/action_frontPage_to_loginSuccessful"
+            app:destination="@id/loginSuccessful" />
+
     </fragment>
     <fragment
         android:id="@+id/onBoarding"
@@ -73,11 +74,10 @@
             android:id="@+id/action_signUp_to_otpValidation"
             app:destination="@id/otpValidation" />
     </fragment>
-    <fragment
-        android:id="@+id/splashScreen"
-        android:name="com.example.travelplanner.SplashScreen"
-        android:label="fragment_splash_screen"
-        tools:layout="@layout/fragment_splash_screen" />
+
+    <action
+        android:id="@+id/action_global_loginsuccessful"
+        app:destination="@id/loginSuccessful" />
 
     <action
         android:id="@+id/action_global_onBoardingFragment"
@@ -85,7 +85,7 @@
 
     <action
         android:id="@+id/action_global_spalshScreen"
-        app:destination="@id/onBoarding" />
+        app:destination="@id/splashScreen" />
 
     <action
         android:id="@+id/action_global_loginWithPassword"
@@ -108,5 +108,15 @@
             android:id="@+id/action_resetPassword_to_loginWithPassword"
             app:destination="@id/loginWithPassword" />
     </fragment>
+    <fragment
+        android:id="@+id/loginSuccessful"
+        android:name="com.example.travelplanner.LoginSuccessful"
+        android:label="fragment_login_successful"
+        tools:layout="@layout/fragment_login_successful" />
+    <activity
+        android:id="@+id/splashScreen"
+        android:name="com.example.travelplanner.SplashScreen"
+        android:label="fragment_splash_screen"
+        tools:layout="@layout/fragment_splash_screen" />
 
 </navigation>

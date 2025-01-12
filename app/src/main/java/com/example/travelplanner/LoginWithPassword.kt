@@ -1,35 +1,44 @@
 package com.example.travelplanner
 
 import android.os.Bundle
+import android.util.Log
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.OnBackPressedCallback
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.expandVertically
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
+import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
-import androidx.compose.material.ButtonDefaults
 import androidx.compose.material.SnackbarHostState
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.focus.FocusRequester
+import androidx.compose.ui.focus.focusRequester
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.ComposeView
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalSoftwareKeyboardController
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.font.FontWeight.Companion.Bold
+import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.text.input.VisualTransformation
@@ -37,33 +46,52 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.core.content.ContentProviderCompat.requireContext
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.lifecycleScope
 import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.findNavController
 import com.example.travelplanner.DataClasses.LoginRequest
-import com.example.travelplanner.DataClasses.Register
 import com.example.travelplanner.DataStorage.DataStorageManager
-import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 
 class LoginWithPassword : Fragment() {
     private var email: String = ""
 
+    private lateinit var dataStoreManager: DataStorageManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        dataStoreManager = DataStorageManager(requireContext()) // Initialize here
         arguments?.let {
-            email = it.getString("email", "")
+            email = it.getString("email", "") ?: ""
+            if (email.isEmpty()) {
+                lifecycleScope.launch {
+                    email = retrieveEmail()
+                    Log.d("LoginWithPassword", "Email retrieved from DataStore: $email")
+                }
+            } else {
+                Log.d("LoginWithPassword", "Email from arguments: $email")
+            }
         }
     }
 
+    private suspend fun retrieveEmail(): String {
+        return dataStoreManager.getAccountEmail().first() ?: ""
+    }
 
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
+        lifecycleScope.launch {
+            if (email.isEmpty()) {
+                email = retrieveEmail()
+            }
+            Log.d("LoginWithPasswordOnCreateView", "Email retrieved from DataStore: $email")
+        }
 
         requireActivity().onBackPressedDispatcher.addCallback(
             viewLifecycleOwner,
@@ -73,12 +101,13 @@ class LoginWithPassword : Fragment() {
                 }
             }
         )
-        
+
         return ComposeView(requireContext()).apply {
             setContent {
                 LoginScreen(
                     findNavController(),
-                    email = email
+                    email = email,
+                    dataStoreManager = dataStoreManager
                 )
             }
         }
@@ -89,26 +118,52 @@ class LoginWithPassword : Fragment() {
 @Composable
 fun LoginScreen(
     navController: NavController,
-    email: String = ""
+    email: String,
+    dataStoreManager: DataStorageManager
 ) {
     var password by remember { mutableStateOf("") }
     var passwordVisible by remember { mutableStateOf(false) }
-    var isError by remember { mutableStateOf(false) }
     var isSuccess by remember { mutableStateOf(false) }
     val scope = rememberCoroutineScope()
+    var showPasswordRequirements by remember { mutableStateOf(false) }
     val context = LocalContext.current
+    var isPasswordFocused by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    val focusManager = LocalFocusManager.current
+    val keyboardController = LocalSoftwareKeyboardController.current
+
     val primaryColor = ContextCompat.getColor(context, R.color.primarycolor)
+    val passwordBoxColor = Color(ContextCompat.getColor(context, R.color.passwordBox))
+    val green = Color(ContextCompat.getColor(context, R.color.correctcolor))
+
+    val passwordRequirements = listOf(
+        "One uppercase letter" to { it: String -> it.any { char -> char.isUpperCase() } },
+        "One lowercase letter" to { it: String -> it.any { char -> char.isLowerCase() } },
+        "One number" to { it: String -> it.any { char -> char.isDigit() } },
+        "One special character (&@$% etc.)" to { it: String -> it.any { char -> !char.isLetterOrDigit() } },
+        "At least 8 characters" to { it: String -> it.length >= 8 }
+    )
+
+    fun isPasswordValid(pass: String): Boolean {
+        return passwordRequirements.all { (_, check) -> check(pass) }
+    }
 
     Surface(
-        modifier = Modifier.fillMaxSize(),
-        color = MaterialTheme.colorScheme.background
+        modifier = Modifier
+            .fillMaxSize(),
+        color = Color.White
     ) {
-        Box(modifier = Modifier.fillMaxSize()) {
+        Box(modifier = Modifier
+            .fillMaxSize()
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = { focusManager.clearFocus() })
+            }
+        ) {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(16.dp)
+
             ) {
 
                 Spacer(modifier = Modifier.height(48.dp))
@@ -146,33 +201,36 @@ fun LoginScreen(
                     value = password,
                     onValueChange = {
                         password = it
-                        isError = false
+                        showPasswordRequirements = true
                     },
-                    label = { Text("Password") },
+                    placeholder = { Text("Password") },
                     singleLine = true,
-                    modifier = Modifier.fillMaxWidth(),
-                    isError = isError,
-                    visualTransformation = if (passwordVisible)
-                        VisualTransformation.None
-                    else
-                        PasswordVisualTransformation(),
                     keyboardOptions = KeyboardOptions(
-                        keyboardType = KeyboardType.Password
+                        keyboardType = KeyboardType.Password,
+                        imeAction = ImeAction.Done
                     ),
+                    keyboardActions = KeyboardActions(
+                        onDone = {
+                            keyboardController?.hide()
+                            focusManager.clearFocus()
+                        }
+                    ),
+                    visualTransformation = if (passwordVisible) VisualTransformation.None else PasswordVisualTransformation(),
                     trailingIcon = {
-                        IconButton(onClick = { passwordVisible = !passwordVisible }) {
-                            Icon(
-                                imageVector = if (passwordVisible)
-                                    Icons.Default.VisibilityOff
-                                else
-                                    Icons.Default.Visibility,
-                                contentDescription = if (passwordVisible)
-                                    "Hide password"
-                                else
-                                    "Show password"
+                        androidx.compose.material.IconButton(onClick = { passwordVisible = !passwordVisible }) {
+                            androidx.compose.material.Icon(
+                                if (passwordVisible) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (passwordVisible) "Hide password" else "Show password"
                             )
                         }
                     },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .focusRequester(remember { FocusRequester() })
+                        .onFocusChanged { focusState ->
+                            isPasswordFocused = focusState.isFocused
+                            showPasswordRequirements = focusState.isFocused && password.isNotEmpty()
+                        },
                     shape = RoundedCornerShape(15.dp)
                 )
 
@@ -192,36 +250,75 @@ fun LoginScreen(
                 }
 
                 AnimatedVisibility(
-                    visible = isError,
-                    enter = fadeIn(),
-                    exit = fadeOut()
+                    visible = showPasswordRequirements && isPasswordFocused,
+                    enter = fadeIn() + expandVertically(),
+                    exit = fadeOut() + shrinkVertically()
                 ) {
-                    Text(
-                        text = "Incorrect Password",
-                        color = MaterialTheme.colorScheme.error,
-                        modifier = Modifier.padding(vertical = 4.dp)
-                    )
+                    androidx.compose.material.Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(8.dp),
+                        backgroundColor = passwordBoxColor
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            androidx.compose.material.Text(
+                                text = "Password must include:",
+                                color = androidx.compose.material.MaterialTheme.colors.onSurface.copy(
+                                    alpha = 0.7f
+                                )
+                            )
+                            passwordRequirements.forEach { (requirement, check) ->
+                                Row(
+                                    modifier = Modifier.padding(vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    androidx.compose.material.Icon(
+                                        painter = painterResource(
+                                            id = if (check(password)) R.drawable.tick
+                                            else R.drawable.ic_launcher_foreground
+                                        ),
+                                        contentDescription = null,
+                                        tint = if (check(password)) green else Color.Black,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    androidx.compose.material.Text(
+                                        text = requirement,
+                                        color = if (check(password)) green else Color.Black
+                                    )
+                                }
+                            }
+                        }
+                    }
                 }
 
                 Button(
                     onClick = {
                         scope.launch {
-                            try {
-                                val response = AuthRetrofitClient.instance.login(LoginRequest(email, password))
-                                if (response.data.access != null) {
-                                    DataStorageManager.saveToken(context, response.data.access)
-                                    navController.navigate(R.id.action_loginWithPassword_to_splashScreen,Bundle().apply {
-                                        putString("email", email)
-                                    })
-                                } else {
-                                    snackbarHostState.showSnackbar(response.message)
+                            when{
+                                !isPasswordValid(password) -> {
+                                    scope.launch {
+                                        snackbarHostState.showSnackbar("Password does not meet requirements")
+                                    }
                                 }
-                            } catch (e: Exception) {
-                                snackbarHostState.showSnackbar("Login failed: ${e.message}")
+                                else -> {
+                                    try {
+                                        val response = AuthRetrofitClient.instance.login(LoginRequest(email, password))
+                                        if (response.data.access != null) {
+                                            dataStoreManager.saveToken(response.data.access)
+                                            Log.d("LoginWithPassword", "Token: ${dataStoreManager.getToken()}")
+                                            navController.navigate(R.id.action_loginWithPassword_to_splashScreen,Bundle().apply {
+                                                putString("email", email)
+                                            })
+                                        } else {
+                                            snackbarHostState.showSnackbar(response.message)
+                                        }
+                                    } catch (e: Exception) {
+                                        snackbarHostState.showSnackbar("Login failed: ${e.message}")
+                                    }
+                                }
                             }
-//                            finally {
-//                                isLoading = false
-//                            }
                         }
                     },
                     modifier = Modifier
@@ -247,37 +344,6 @@ fun LoginScreen(
                         .align(Alignment.CenterHorizontally)
                 )
             }
-
-            AnimatedVisibility(
-                visible = isSuccess,
-                enter = fadeIn(),
-                exit = fadeOut(),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Surface(
-                    color = Color.White,
-                    modifier = Modifier.fillMaxSize()
-                ) {
-                    Column(
-                        modifier = Modifier.fillMaxSize(),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.Center
-                    ) {
-                        Icon(
-                            painter = painterResource(id = R.drawable.ic_launcher_foreground),
-                            contentDescription = "Success",
-                            tint = MaterialTheme.colorScheme.primary,
-                            modifier = Modifier.size(64.dp)
-                        )
-                        Text(
-                            text = "Sign In\nSuccessful",
-                            textAlign = TextAlign.Center,
-                            style = MaterialTheme.typography.headlineSmall,
-                            modifier = Modifier.padding(top = 16.dp)
-                        )
-                    }
-                }
-            }
         }
     }
 }
@@ -287,6 +353,7 @@ fun LoginScreen(
 fun LoginScreenPreview() {
     LoginScreen(
         rememberNavController(),
-        email = ""
+        email = "",
+        dataStoreManager = DataStorageManager(LocalContext.current)
     )
 }
