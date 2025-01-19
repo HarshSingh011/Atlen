@@ -1,7 +1,6 @@
 package com.example.travelplanner
 
 import android.os.Bundle
-import android.provider.Settings.Global.putString
 import androidx.fragment.app.Fragment
 import android.view.LayoutInflater
 import android.view.View
@@ -12,11 +11,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
-//import androidx.compose.material3.*
-//import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material.*
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -31,12 +27,13 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
-import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.fragment.findNavController
 import com.example.travelplanner.DataClasses.EmailVerify
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import retrofit2.HttpException
 
 class forgotPasswordEmailVerify : Fragment() {
     private var email: String = ""
@@ -52,7 +49,6 @@ class forgotPasswordEmailVerify : Fragment() {
         inflater: LayoutInflater, container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View {
-
         requireActivity().onBackPressedDispatcher.addCallback(
             viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
@@ -70,11 +66,9 @@ class forgotPasswordEmailVerify : Fragment() {
     }
 }
 
-
 @Composable
-fun ForgotPasswordEmailVerify( navController: NavController) {
+fun ForgotPasswordEmailVerify(navController: androidx.navigation.NavController) {
     var email by remember { mutableStateOf("") }
-    var showError by remember { mutableStateOf(false) }
     var errorMessage by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
@@ -87,16 +81,25 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
     val passwordBoxColor = Color(ContextCompat.getColor(context, R.color.passwordBox))
     val green = Color(ContextCompat.getColor(context, R.color.correctcolor))
 
+    var isSnackbarActive by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isSnackbarActive) {
+        if (isSnackbarActive) {
+            delay(3000)
+            snackbarHostState.currentSnackbarData?.dismiss()
+            isSnackbarActive = false
+        }
+    }
+
     Box(
         modifier = Modifier.fillMaxSize()
-    ){
+    ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp)
                 .background(Color.White)
         ) {
-
             Spacer(modifier = Modifier.height(60.dp))
 
             Image(
@@ -107,33 +110,6 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
                     .padding(vertical = 24.dp)
                     .size(80.dp)
             )
-
-            if (showError) {
-                Surface(
-                    color = Color(0xFFFFEBEE),
-                    shape = RoundedCornerShape(4.dp),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(vertical = 8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            painter = painterResource(id = android.R.drawable.ic_dialog_alert),
-                            contentDescription = "Error",
-                            tint = Color.Red,
-                            modifier = Modifier.size(24.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = errorMessage,
-                            color = Color.Red
-                        )
-                    }
-                }
-            }
 
             Text(
                 text = "Forgot your password?",
@@ -174,36 +150,49 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
 
             Button(
                 onClick = {
-                    isLoading = true
-                    if (email.isNotEmpty() ) {
-                        if( email.matches(emailRegex) ){
-                            coroutineScope.launch {
-                                showError = false
-                                try {
-                                    isLoading = false
-                                    val response = AuthRetrofitClient.instance.verifyEmailForgot(EmailVerify(email))
-                                    if (response.success) {
-                                        navController.navigate(R.id.action_forgotPasswordEmailVerify_to_forgotPasswordOtpValidation, Bundle().apply {
-                                            putString("email", email)
-                                        })
-                                    } else {
-                                        val message = JSONObject(response.message).getString("message")
-                                        snackbarHostState.showSnackbar(message)
+                    if (!isSnackbarActive) {
+                        isLoading = true
+                        if (email.isNotEmpty()) {
+                            if (email.matches(emailRegex)) {
+                                coroutineScope.launch {
+                                    try {
+                                        val response = AuthRetrofitClient.instance.verifyEmailForgot(EmailVerify(email))
+                                        isLoading = false
+                                        if (response.success) {
+                                            navController.navigate(R.id.action_forgotPasswordEmailVerify_to_forgotPasswordOtpValidation, Bundle().apply {
+                                                putString("email", email)
+                                            })
+                                        } else {
+                                            val message = JSONObject(response.message).getString("message")
+                                            isSnackbarActive = true
+                                            snackbarHostState.showSnackbar(message)
+                                        }
+                                    } catch (e: HttpException) {
+                                        isLoading = false
+                                        val errorBody = e.response()?.errorBody()?.string()
+                                        val error = JSONObject(errorBody).getString("message")
+                                        isSnackbarActive = true
+                                        snackbarHostState.showSnackbar("Email Verify: $error")
+                                    } catch (e: Exception) {
+                                        isLoading = false
+                                        errorMessage = "Failed to send OTP: ${e.message}"
+                                        isSnackbarActive = true
+                                        snackbarHostState.showSnackbar(errorMessage)
                                     }
-                                } catch (e: Exception) {
-                                    isLoading = false
-                                    showError = true
-                                    errorMessage = "Failed to send OTP: ${e.message}"
+                                }
+                            } else {
+                                isLoading = false
+                                isSnackbarActive = true
+                                scope.launch {
+                                    snackbarHostState.showSnackbar("Please enter a valid email")
                                 }
                             }
                         } else {
+                            isLoading = false
+                            isSnackbarActive = true
                             scope.launch {
-                                snackbarHostState.showSnackbar("Please enter a valid email")
+                                snackbarHostState.showSnackbar("Please enter your email")
                             }
-                        }
-                    } else {
-                        scope.launch {
-                            snackbarHostState.showSnackbar("Please enter your email")
                         }
                     }
                 },
@@ -212,21 +201,18 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
                     .height(48.dp),
                 shape = RoundedCornerShape(15.dp),
                 colors = ButtonDefaults.buttonColors(
-                    backgroundColor = Color(primaryColor)
+                    backgroundColor = if (isSnackbarActive) Color.Gray else Color(primaryColor)
                 ),
-                enabled = !isLoading
+                enabled = !isLoading && !isSnackbarActive
             ) {
-                if (isLoading) {
-                    CircularProgressIndicator(color = Color.White)
-                } else {
-                    Text(
-                        text = "Send OTP",
-                        color = Color.White,
-                        fontSize = 16.sp
-                    )
-                }
+                Text(
+                    text = "Send OTP",
+                    color = if (isSnackbarActive) Color.Black else Color.White,
+                    fontSize = 16.sp
+                )
             }
         }
+
         SnackbarHost(
             hostState = snackbarHostState,
             modifier = Modifier
@@ -248,13 +234,15 @@ fun ForgotPasswordEmailVerify( navController: NavController) {
                         contentDescription = null,
                         tint = Color(0xFFB71C1C),
                         modifier = Modifier.clickable {
-                            snackbarHostState.currentSnackbarData?.dismiss()
+                            snackbarData.dismiss()
+                            isSnackbarActive = false
                         }
                     )
                     Text(snackbarData.message)
                 }
             }
         }
+
         LoadingScreen(isLoading = isLoading)
     }
 }

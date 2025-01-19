@@ -114,17 +114,49 @@ data class ResetPasswordResponse(
     val success: Boolean
 )
 
-data class googleOauthResponse(
-    val access_token: String,
-    val expires_in: Int,
-    val refresh_token: String,
-    val scope: String,
-    val token_type: String,
-    val user: User
-)
+//data class googleOauthResponse(
+//    val access_token: String,
+//    val expires_in: Int,
+//    val refresh_token: String,
+//    val scope: String,
+//    val token_type: String,
+//    val user: User
+//)
 
 data class User(
     val email: String,
     val first_name: String,
     val last_name: String
+)
+
+data class googleOauth(
+    val access_token: String,
+    val is_test: Boolean
+)
+
+data class googleOauthResponse(
+    val `data`: Data7,
+    val success: Boolean
+)
+
+data class Data7(
+    val tokens: Tokens,
+    val userinfo: Userinfo
+)
+
+data class Tokens(
+    val access: String,
+    val refresh: String
+)
+
+data class Userinfo(
+    val access_type: String,
+    val aud: String,
+    val azp: String,
+    val email: String,
+    val email_verified: String,
+    val exp: String,
+    val expires_in: String,
+    val scope: String,
+    val sub: String
 )

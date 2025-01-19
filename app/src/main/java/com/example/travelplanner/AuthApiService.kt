@@ -12,6 +12,7 @@ import com.example.travelplanner.DataClasses.Registrationotpresponse
 import com.example.travelplanner.DataClasses.ResetPasswordRequest
 import com.example.travelplanner.DataClasses.ResetPasswordResponse
 import com.example.travelplanner.DataClasses.SignUpResponse
+import com.example.travelplanner.DataClasses.googleOauth
 import com.example.travelplanner.DataClasses.googleOauthResponse
 import retrofit2.Call
 import retrofit2.http.Body
@@ -42,7 +43,7 @@ interface AuthApiService {
     @POST("reset-password/")
     suspend fun resetpassword(@Body resetpassword: ResetPasswordRequest): ResetPasswordResponse
 
-    @POST("convert-token/")
+    @POST("convert-token")
     @FormUrlEncoded
     suspend fun convertToken(
         @Field("grant_type") grantType: String,
@@ -50,4 +51,7 @@ interface AuthApiService {
         @Field("backend") backend: String,
         @Field("token") token: String
     ): googleOauthResponse
+
+    @POST("verify-android-token")
+    suspend fun googleOauth(@Body googleOauth: googleOauth): googleOauthResponse
 }

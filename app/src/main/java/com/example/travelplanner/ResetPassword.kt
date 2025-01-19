@@ -14,6 +14,7 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -49,6 +50,7 @@ import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -85,8 +87,10 @@ import androidx.navigation.fragment.findNavController
 import com.example.travelplanner.DataClasses.Register
 import com.example.travelplanner.DataClasses.ResetPasswordRequest
 import com.example.travelplanner.R
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import retrofit2.HttpException
 
 
 class ResetPassword : Fragment() {
@@ -149,6 +153,16 @@ fun resetpassword(
     val green = Color(ContextCompat.getColor(context, R.color.correctcolor))
 
     val snackbarHostState = remember { SnackbarHostState() }
+
+    var isSnackbarActive by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isSnackbarActive) {
+        if (isSnackbarActive) {
+            delay(3000)
+            snackbarHostState.currentSnackbarData?.dismiss()
+            isSnackbarActive = false
+        }
+    }
 
     val passwordRequirements = listOf(
         "One uppercase letter" to { it: String -> it.any { char -> char.isUpperCase() } },
@@ -409,11 +423,13 @@ fun resetpassword(
                             !isPasswordValid(password) -> {
                                 scope.launch {
                                     snackbarHostState.showSnackbar("Password does not meet requirements")
+                                    isSnackbarActive = true
                                 }
                             }
                             password != confirmPassword -> {
                                 scope.launch {
                                     snackbarHostState.showSnackbar("Passwords do not match")
+                                    isSnackbarActive = true
                                 }
                             }
                             else -> {
@@ -438,10 +454,18 @@ fun resetpassword(
                                         } else {
                                             val message = JSONObject(response.message).getString("message")
                                             snackbarHostState.showSnackbar(message)
+                                            isSnackbarActive = true
                                         }
-                                    } catch (e: Exception) {
+                                    }catch (e: HttpException) {
+                                        isLoading = false
+                                        isSnackbarActive = true
+                                        val errorBody = e.response()?.errorBody()?.string()
+                                        val error = JSONObject(errorBody).getString("message")
+                                        snackbarHostState.showSnackbar("Registration failed: $error")
+                                    }  catch (e: Exception) {
                                         isLoading = false
                                         snackbarHostState.showSnackbar("Registration failed: ${e.message}")
+                                        isSnackbarActive = true
                                     }
                                 }
                             }
@@ -473,7 +497,9 @@ fun resetpassword(
 
             SnackbarHost(
                 hostState = snackbarHostState,
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = 30.dp)
             ) { snackbarData ->
                 Snackbar(
                     modifier = Modifier.padding(16.dp),
@@ -488,7 +514,11 @@ fun resetpassword(
                         Icon(
                             imageVector = Icons.Default.Close,
                             contentDescription = null,
-                            tint = Color(0xFFB71C1C)
+                            tint = Color(0xFFB71C1C),
+                            modifier = Modifier.clickable {
+                                snackbarData.dismiss()
+                                isSnackbarActive = false
+                            }
                         )
                         Text(snackbarData.message)
                     }

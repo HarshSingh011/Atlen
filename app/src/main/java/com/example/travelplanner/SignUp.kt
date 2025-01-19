@@ -52,8 +52,10 @@ import androidx.navigation.NavController
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.findNavController
 import com.example.travelplanner.DataClasses.Register
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import org.json.JSONObject
+import retrofit2.HttpException
 
 class SignUp : Fragment() {
     private var email: String = ""
@@ -111,6 +113,16 @@ fun SignUpScreen(
         "One special character (&@$% etc.)" to { it: String -> it.any { char -> !char.isLetterOrDigit() } },
         "At least 8 characters" to { it: String -> it.length >= 8 }
     )
+
+    var isSnackbarActive by remember { mutableStateOf(false) }
+
+    LaunchedEffect(isSnackbarActive) {
+        if (isSnackbarActive) {
+            delay(3000)
+            snackbarHostState.currentSnackbarData?.dismiss()
+            isSnackbarActive = false
+        }
+    }
 
     fun isPasswordValid(pass: String): Boolean {
         return passwordRequirements.all { (_, check) -> check(pass) }
@@ -401,16 +413,19 @@ fun SignUpScreen(
                             firstName.isEmpty() || lastName.isEmpty() -> {
                                 scope.launch {
                                     snackbarHostState.showSnackbar("Please fill in all fields")
+                                    isSnackbarActive = true
                                 }
                             }
                             !isPasswordValid(password) -> {
                                 scope.launch {
                                     snackbarHostState.showSnackbar("Password does not meet requirements")
+                                    isSnackbarActive = true
                                 }
                             }
                             password != confirmPassword -> {
                                 scope.launch {
                                     snackbarHostState.showSnackbar("Passwords do not match")
+                                    isSnackbarActive = true
                                 }
                             }
                             else -> {
@@ -432,9 +447,17 @@ fun SignUpScreen(
                                         } else {
                                             val message = JSONObject(response.message).getString("message")
                                             snackbarHostState.showSnackbar(message)
+                                            isSnackbarActive = true
                                         }
+                                    } catch (e: HttpException) {
+                                        isLoading = false
+                                        isSnackbarActive = true
+                                        val errorBody = e.response()?.errorBody()?.string()
+                                        val error = JSONObject(errorBody).getString("message")
+                                        snackbarHostState.showSnackbar("Registration failed: $error")
                                     } catch (e: Exception) {
                                         isLoading = false
+                                        isSnackbarActive = true
                                         snackbarHostState.showSnackbar("Registration failed: ${e.message}")
                                     }
                                 }
@@ -486,14 +509,14 @@ fun SignUpScreen(
                             contentDescription = null,
                             tint = Color(0xFFB71C1C),
                             modifier = Modifier.clickable {
-                                snackbarHostState.currentSnackbarData?.dismiss()
+                                snackbarData.dismiss()
+                                isSnackbarActive = false
                             }
                         )
                         Text(snackbarData.message)
                     }
                 }
             }
-            LoadingScreen(isLoading = isLoading)
         }
     }
 }

@@ -90,5 +90,17 @@ dependencies {
     implementation ("androidx.datastore:datastore-core:1.0.0")
 
     // GoogleAuth
-    implementation ("com.google.android.gms:play-services-auth:20.5.0")
+    implementation ("com.google.android.gms:play-services-auth:21.3.0")
+    implementation("androidx.credentials:credentials:1.0.0-alpha01")
+    implementation("androidx.credentials:credentials-play-services-auth:1.0.0-alpha01")
+    implementation("com.google.android.libraries.identity.googleid:googleid:1.0.0")
+
+    // Await
+    implementation ("org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.6.0")
 }
+
+//apply(plugin = "com.google.gms.google-services")
+//
+//tasks.named("mergeDebugResources") {
+//    dependsOn("processDebugGoogleServices")
+//}

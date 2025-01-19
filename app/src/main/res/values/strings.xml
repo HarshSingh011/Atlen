@@ -1,6 +1,5 @@
 <resources>
     <string name="app_name">TravelPlanner</string>
-    <!-- TODO: Remove or change this placeholder text -->
     <string name="hello_blank_fragment">Hello blank fragment</string>
-    <string name="default_web_client_id">cBG2UWphuVJT3JL91Pfd5NZw8UmBUv59xU8NjQVE6oEGM0Znzt3LXuN7WNC72cjZHX0ECwbWDYaiZBoNqxTwLa20BO64r4iherTrCpWrrUI5myf2EjVr0QKwP1Gy12Y0</string>
+    <string name="default_web_client_id">181001656008-q6raa41e7e9npi7mj6574nvsn7mlpvev.apps.googleusercontent.com</string>
 </resources>
